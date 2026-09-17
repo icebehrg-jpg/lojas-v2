@@ -70,6 +70,152 @@
         { nm: 'Carlos Eduardo Ramos', role: 'Gerente de Loja II', tel: '(11) 3346-7215' }
     ];
 
+    // ---------- manager contacts (editable per store) ----------
+    var MANAGERS_KEY = 'kalunga-lojas-managers';
+
+    function defaultManagers() {
+        var d = {};
+        d[EXAMPLE_FILIAL] = EXAMPLE_TEAM.map(function(m) { return { nm: m.nm, role: m.role, tel: m.tel }; });
+        return d;
+    }
+
+    function loadManagers() {
+        var saved = null;
+        try { saved = JSON.parse(localStorage.getItem(MANAGERS_KEY) || 'null'); } catch (e) {}
+        if (saved && typeof saved === 'object') return saved;
+        return defaultManagers();
+    }
+
+    function saveManagers() {
+        try { localStorage.setItem(MANAGERS_KEY, JSON.stringify(managersState)); } catch (e) {}
+    }
+    var managersState = loadManagers();
+
+    function getManagers(filial) { return managersState[filial] || []; }
+
+    var PEN_ICON = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.85 2.83 0 114 4L7.5 20.5 2 22l1.5-5.5L17 3z"/></svg>';
+    var TRASH_ICON = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M8 6V4a2 2 0 012-2h4a2 2 0 012 2v2m3 0-1 14a2 2 0 01-2 2H7a2 2 0 01-2-2L4 6"/></svg>';
+    var CHECK_ICON = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>';
+    var CLOSE_ICON = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6L6 18M6 6l12 12"/></svg>';
+
+    function managerInitials(nm) {
+        var parts = (nm || '').split(' ').filter(Boolean).slice(0, 2).map(function(w) { return w[0]; });
+        return parts.join('').toUpperCase() || '?';
+    }
+
+    function managerViewRow(idx, m) {
+        return '<div class="contact-row" data-idx="' + idx + '">' +
+            '<div class="av">' + managerInitials(m.nm) + '</div>' +
+            '<div class="who"><span class="nm">' + escapeHtml(m.nm || 'Sem nome') + '</span><span class="role">' + escapeHtml(m.role || 'Cargo não informado') + '</span></div>' +
+            (m.tel ? '<a href="tel:' + escapeHtml(m.tel) + '" class="mono tel">' + escapeHtml(m.tel) + '</a>' : '<span class="muted tel">Sem telefone</span>') +
+            '<div class="row-actions">' +
+            '<button class="icon-btn sm" data-act="edit" data-idx="' + idx + '" aria-label="Editar gerente" title="Editar">' + PEN_ICON + '</button>' +
+            '<button class="icon-btn sm danger" data-act="del" data-idx="' + idx + '" aria-label="Remover gerente" title="Remover">' + TRASH_ICON + '</button>' +
+            '</div>' +
+            '</div>';
+    }
+
+    function managerEditRow(idx, m, isNew) {
+        return '<div class="contact-row editing" data-idx="' + idx + '">' +
+            '<div class="edit-grid">' +
+            '<input type="text" class="edit-input" data-f="nm" placeholder="Nome completo" value="' + escapeHtml(m.nm || '') + '">' +
+            '<input type="text" class="edit-input" data-f="role" placeholder="Cargo" value="' + escapeHtml(m.role || '') + '">' +
+            '<input type="text" class="edit-input mono" data-f="tel" placeholder="Telefone" value="' + escapeHtml(m.tel || '') + '">' +
+            '</div>' +
+            '<div class="row-actions">' +
+            '<button class="icon-btn sm primary" data-act="save" data-idx="' + idx + '" data-new="' + (isNew ? '1' : '0') + '" aria-label="Salvar" title="Salvar">' + CHECK_ICON + '</button>' +
+            '<button class="icon-btn sm" data-act="cancel" data-idx="' + idx + '" data-new="' + (isNew ? '1' : '0') + '" aria-label="Cancelar" title="Cancelar">' + CLOSE_ICON + '</button>' +
+            '</div>' +
+            '</div>';
+    }
+
+    function teamListHtml(filial) {
+        var list = getManagers(filial);
+        return list.length ? list.map(function(m, i) { return managerViewRow(i, m); }).join('') : '<div class="empty-note">Nenhum gerente cadastrado ainda para esta loja. Use "Adicionar gerente" para incluir um contato.</div>';
+    }
+
+    function refreshTeamList(filial) {
+        var list = document.getElementById('teamList');
+        if (list) list.innerHTML = teamListHtml(filial);
+    }
+
+    function swapRowToEdit(idx) {
+        var row = document.querySelector('#teamList .contact-row[data-idx="' + idx + '"]');
+        if (!row) return;
+        var m = getManagers(currentModalFilial)[idx] || { nm: '', role: '', tel: '' };
+        row.outerHTML = managerEditRow(idx, m, false);
+        var input = document.querySelector('#teamList .contact-row[data-idx="' + idx + '"] .edit-input');
+        if (input) input.focus();
+    }
+
+    function cancelManagerRow(idx, isNew) {
+        if (isNew) {
+            var row = document.querySelector('#teamList .contact-row[data-idx="' + idx + '"]');
+            if (row) row.remove();
+            if (!getManagers(currentModalFilial).length) refreshTeamList(currentModalFilial);
+            return;
+        }
+        var m = getManagers(currentModalFilial)[idx];
+        var row = document.querySelector('#teamList .contact-row[data-idx="' + idx + '"]');
+        if (row && m) row.outerHTML = managerViewRow(idx, m);
+    }
+
+    function saveManagerRow(idx, isNew) {
+        var row = document.querySelector('#teamList .contact-row[data-idx="' + idx + '"]');
+        if (!row) return;
+        var nm = row.querySelector('[data-f="nm"]').value.trim();
+        var role = row.querySelector('[data-f="role"]').value.trim();
+        var tel = row.querySelector('[data-f="tel"]').value.trim();
+        if (!nm) { toast('Informe ao menos o nome do gerente.'); return; }
+        if (!managersState[currentModalFilial]) managersState[currentModalFilial] = [];
+        var m = { nm: nm, role: role, tel: tel };
+        if (isNew) { managersState[currentModalFilial].push(m);
+            idx = managersState[currentModalFilial].length - 1; } else { managersState[currentModalFilial][idx] = m; }
+        saveManagers();
+        row.outerHTML = managerViewRow(idx, m);
+        toast('Dados do gerente salvos.');
+    }
+
+    function deleteManagerRow(idx) {
+        if (!window.confirm('Remover este gerente da lista?')) return;
+        managersState[currentModalFilial].splice(idx, 1);
+        saveManagers();
+        refreshTeamList(currentModalFilial);
+        toast('Gerente removido.');
+    }
+
+    function addManagerRow() {
+        var list = document.getElementById('teamList');
+        if (!list) return;
+        var emptyNote = list.querySelector('.empty-note');
+        if (emptyNote) emptyNote.remove();
+        var idx = getManagers(currentModalFilial).length;
+        var wrap = document.createElement('div');
+        wrap.innerHTML = managerEditRow(idx, { nm: '', role: '', tel: '' }, true);
+        var node = wrap.firstChild;
+        list.appendChild(node);
+        var input = node.querySelector('.edit-input');
+        if (input) input.focus();
+    }
+
+    function bindTeamList() {
+        var list = document.getElementById('teamList');
+        if (!list) return;
+        list.addEventListener('click', function(e) {
+            var btn = e.target.closest('button[data-act]');
+            if (!btn) return;
+            var act = btn.getAttribute('data-act');
+            var idx = parseInt(btn.getAttribute('data-idx'), 10);
+            var isNew = btn.getAttribute('data-new') === '1';
+            if (act === 'edit') swapRowToEdit(idx);
+            else if (act === 'del') deleteManagerRow(idx);
+            else if (act === 'save') saveManagerRow(idx, isNew);
+            else if (act === 'cancel') cancelManagerRow(idx, isNew);
+        });
+        var addBtn = document.getElementById('btnAddManager');
+        if (addBtn) addBtn.addEventListener('click', addManagerRow);
+    }
+
     // ---------- state ----------
     var state = {
         status: '',
@@ -367,11 +513,13 @@
 
     // ---------- modal ----------
     var currentTab = 'geral';
+    var currentModalFilial = null;
 
     function openModal(filial) {
         var s = STORES.filter(function(x) { return x.filial === filial; })[0];
         if (!s) return;
         currentTab = 'geral';
+        currentModalFilial = s.filial;
         document.getElementById('modalTitle').textContent = s.loja;
         document.getElementById('modalFilial').textContent = 'Filial #' + s.filial;
         document.getElementById('modalAddr').textContent = (s.endereco ? s.endereco + ' · ' : '') + s.cidade + '/' + s.uf;
@@ -475,28 +623,17 @@
             '<span class="' + (isExample ? 'mono' : 'muted') + '">' + (isExample ? '(11) 3346-7200' : 'Não informado nesta demonstração') + '</span></div>' +
             '</div></div>';
 
-        if (isExample) {
-            html += '<div class="subsection"><div class="section-label">Equipe de gestão <span class="example-chip">dados fictícios de exemplo</span></div>' +
-                '<div class="contact-list">' +
-                EXAMPLE_TEAM.map(function(m) {
-                    var initials = m.nm.split(' ').filter(Boolean).slice(0, 2).map(function(w) { return w[0]; }).join('').toUpperCase();
-                    return '<div class="contact-row"><div class="av">' + initials + '</div>' +
-                        '<div class="who"><span class="nm">' + escapeHtml(m.nm) + '</span><span class="role">' + escapeHtml(m.role) + '</span></div>' +
-                        '<a href="tel:' + escapeHtml(m.tel) + '" class="mono" style="font-size:13px;font-weight:600;color:var(--text-2);">' + escapeHtml(m.tel) + '</a></div>';
-                }).join('') +
-                '</div></div>';
-        } else {
-            html += '<div class="subsection"><div class="notice neutral">' +
-                '<span>Esta demonstração inclui equipe de gestão completa apenas para a loja <b class="mono">' + EXAMPLE_FILIAL + '</b> (SP-SPO-RadialMooca). Para as demais lojas, esses dados viriam da mesma origem usada no cadastro de contatos.</span>' +
-                '<button class="link" id="gotoExampleContato">Ver exemplo completo (loja ' + EXAMPLE_FILIAL + ') →</button>' +
-                '</div></div>';
-        }
+        html += '<div class="subsection">' +
+            '<div class="section-label with-action">' +
+            '<span>Equipe de gestão' + (isExample ? ' <span class="example-chip">contém dados de exemplo</span>' : '') + '</span>' +
+            '<button class="link-btn" id="btnAddManager" type="button">+ Adicionar gerente</button>' +
+            '</div>' +
+            '<div class="contact-list" id="teamList">' + teamListHtml(s.filial) + '</div>' +
+            '</div>';
 
         html += '</div>';
         document.getElementById('panelContato').innerHTML = html;
-        var goto = document.getElementById('gotoExampleContato');
-        if (goto) goto.addEventListener('click', function() { openModal(EXAMPLE_FILIAL);
-            setTab('contato'); });
+        bindTeamList();
     }
 
     function renderOperacional(s) {
