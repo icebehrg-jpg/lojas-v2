@@ -442,7 +442,7 @@
 
     function renderGeral(s) {
         var html = '<div class="two-col">' +
-            '<div style="display:flex;flex-direction:column;gap:14px;">' +
+            '<div class="subsection">' +
             '<div class="section-label">Informações gerais</div>' +
             '<div class="field-grid">' +
             fitem('Código', '<span class="mono">' + escapeHtml(s.filial) + '</span>') +
@@ -455,7 +455,7 @@
             fitem('Endereço', s.endereco ? escapeHtml(s.endereco) : null) +
             fitem('Cidade', escapeHtml(s.cidade)) +
             '</div>' +
-            '<div style="display:flex;flex-direction:column;gap:8px;">' +
+            '<div class="subsection">' +
             '<div class="section-label">Localização</div>' +
             buildMapEmbed(s) +
             '</div>' +
@@ -465,9 +465,9 @@
 
     function renderContato(s) {
         var isExample = s.filial === EXAMPLE_FILIAL;
-        var html = '<div style="display:flex;flex-direction:column;gap:18px;">';
+        var html = '<div class="opstack">';
 
-        html += '<div><div class="section-label">Contato da loja</div>' +
+        html += '<div class="subsection"><div class="section-label">Contato da loja</div>' +
             '<div class="contact-card">' +
             '<div class="contact-item"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--text-3)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="M2 6l10 7 10-7"/></svg>' +
             (s.email ? '<a href="mailto:' + escapeHtml(s.email) + '">' + escapeHtml(s.email) + '</a>' : '<span class="muted">Não informado</span>') + '</div>' +
@@ -476,7 +476,7 @@
             '</div></div>';
 
         if (isExample) {
-            html += '<div><div class="section-label">Equipe de gestão <span class="example-chip">dados fictícios de exemplo</span></div>' +
+            html += '<div class="subsection"><div class="section-label">Equipe de gestão <span class="example-chip">dados fictícios de exemplo</span></div>' +
                 '<div class="contact-list">' +
                 EXAMPLE_TEAM.map(function(m) {
                     var initials = m.nm.split(' ').filter(Boolean).slice(0, 2).map(function(w) { return w[0]; }).join('').toUpperCase();
@@ -486,10 +486,10 @@
                 }).join('') +
                 '</div></div>';
         } else {
-            html += '<div class="notice neutral">' +
+            html += '<div class="subsection"><div class="notice neutral">' +
                 '<span>Esta demonstração inclui equipe de gestão completa apenas para a loja <b class="mono">' + EXAMPLE_FILIAL + '</b> (SP-SPO-RadialMooca). Para as demais lojas, esses dados viriam da mesma origem usada no cadastro de contatos.</span>' +
                 '<button class="link" id="gotoExampleContato">Ver exemplo completo (loja ' + EXAMPLE_FILIAL + ') →</button>' +
-                '</div>';
+                '</div></div>';
         }
 
         html += '</div>';
@@ -502,8 +502,8 @@
     function renderOperacional(s) {
         var isExample = s.filial === EXAMPLE_FILIAL;
         var html = '<div class="two-col">' +
-            '<div style="display:flex;flex-direction:column;gap:18px;">' +
-            '<div><div class="section-label">Horário de funcionamento' + (isExample ? ' <span class="example-chip">exemplo</span>' : '') + '</div>';
+            '<div class="opstack">' +
+            '<div class="subsection"><div class="section-label">Horário de funcionamento' + (isExample ? ' <span class="example-chip">exemplo</span>' : '') + '</div>';
 
         if (isExample) {
             html += '<div style="display:flex;flex-direction:column;gap:6px;">' +
@@ -515,7 +515,7 @@
         }
         html += '</div>';
 
-        html += '<div><div class="section-label">Serviços</div><div class="services-grid">' + ['pickup', 'rappi', 'shopping', 'entrega'].map(function(k) {
+        html += '<div class="subsection"><div class="section-label">Serviços</div><div class="services-grid">' + ['pickup', 'rappi', 'shopping', 'entrega'].map(function(k) {
                 var on = s.sv[k];
                 return '<div class="svc-card ' + (on ? 'on' : 'off') + '"><span class="ic">' + svcIcon(k) + '</span><span class="lbl">' + SVC_LABEL[k] + '</span>' +
                     (on ? '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--success)" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>' : '<span style="font-size:10.5px;color:var(--text-3);">N/D</span>') +
@@ -524,7 +524,7 @@
             '</div></div>' +
             '</div>';
 
-        html += '<div style="display:flex;flex-direction:column;gap:12px;">' +
+        html += '<div class="subsection">' +
             '<div class="section-label">Sobre a loja</div>' +
             '<div class="notice amber">' +
             '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex:0 0 auto;margin-top:1px;"><path d="M12 9v4M12 17h.01"/><path d="M10.3 3.9L1.8 18a2 2 0 001.7 3h17a2 2 0 001.7-3L13.7 3.9a2 2 0 00-3.4 0z"/></svg>' +
